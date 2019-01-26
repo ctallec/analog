@@ -33,8 +33,9 @@ class RunLog:
     @property
     def logs(self):
         """Only load logs when needed."""
-        with open(self._logs_file, 'rb') as f:
-            self._logs = pkl.load(f)
+        if not hasattr(self, '_logs'):
+            with open(self._logs_file, 'rb') as f:
+                self._logs = pkl.load(f)
         return self._logs
 
 class SettingLog:
