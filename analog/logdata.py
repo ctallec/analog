@@ -6,6 +6,9 @@ from typing import Callable, List
 # define an Args type
 Args = Dict[str, Any]
 
+def _from_dict(dico: Dict[str, Any]) -> str:
+    return ", ".join(f"{str(k)}: {str(v)}" for k, v in dico.items())
+
 class RunLog:
     """Stores a single run."""
     def __init__(self, args_file: str, logs_file: str) -> None:
@@ -50,18 +53,19 @@ class SettingLog:
 class ExperimentLog:
     """Stores a whole experiment as a disctionary of settings."""
     def __init__(self, runs: Iterable[RunLog]) -> None:
-        self.settings: Dict[Args, SettingLog] = {}
+        self.settings: Dict[str, SettingLog] = {}
         for run in runs:
             args = run.args
-            if args in self.settings:
-                self.settings[args].append(run)
+            if _from_dict(args) in self.settings:
+                self.settings[_from_dict(args)].append(run)
             else:
-                self.settings[args] = SettingLog([run])
+                self.settings[_from_dict(args)] = SettingLog([run])
 
     def _args_set(self) -> Dict[str, Set[Any]]:
         args_set: Dict[str, Set[Any]] = {}
-        for args in self.settings:
-            for k, v in args.items():
+        for str_args, setting in self.settings.items():
+            args = setting.args
+            for k, v in args:
                 if k not in args_set:
                     args_set[k] = set()
                 args_set[k].add(v)
@@ -77,10 +81,10 @@ class ExperimentLog:
                 if len(v_set) == 1}
 
     def extend(self, exp1: 'ExperimentLog'):
-        for args in exp1.settings:
-            if args not in self.settings:
-                self.settings[args] = SettingLog([])
-            self.settings[args].extend(exp1.settings[args])
+        for str_args1, setting1 in exp1.settings.items():
+            if str_args1 not in self.settings:
+                self.settings[str_args1] = SettingLog([])
+            self.settings[str_args1].extend(setting1)
 
 def concat(exp1: 'ExperimentLog', exp2: 'ExperimentLog') -> 'ExperimentLog':
     result_exp = ExperimentLog([])
@@ -91,7 +95,7 @@ def concat(exp1: 'ExperimentLog', exp2: 'ExperimentLog') -> 'ExperimentLog':
 def filter(exp: ExperimentLog, predicate: Callable[[Args], bool]) -> ExperimentLog:
     """Filter out settings that do not match the predicate."""
     runs: List[RunLog] = []
-    for args, setting in exp.settings.items():
-        if predicate(args):
+    for _, setting in exp.settings.items():
+        if predicate(setting.args):
             runs.extend(setting.runs)
     return ExperimentLog(runs)
