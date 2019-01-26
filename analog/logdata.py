@@ -21,6 +21,10 @@ class RunLog:
             args = pkl.load(f)
             if not isinstance(args, dict):
                 args = vars(args)
+                # we remove the seed from the args
+                # to be able to process multiple logs
+                if 'seed' in args:
+                    del args['seed']
                 self.args = args
 
         self._logs_file = logs_file
