@@ -41,12 +41,18 @@ class RunLog:
 class SettingLog:
     """Stores several runs with the same setting (args)."""
     def __init__(self, runs: Iterable[RunLog]) -> None:
-        self.args = next(iter(runs)).args
-        assert all(run.args == self.args for run in runs), \
-            "Not all runs have the same args."
-        self.runs = list(runs)
+        try:
+            self.args = next(iter(runs)).args
+            assert all(run.args == self.args for run in runs), \
+                "Not all runs have the same args."
+            self.runs = list(runs)
+        except StopIteration:
+            self.args = None
+            self.runs = []
 
     def append(self, run: RunLog):
+        if self.args is None:
+            self.args = run.args
         assert run.args == self.args, \
             "Appended run does not have the same args."
         self.runs.append(run)
